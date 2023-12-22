@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "mysql-chart.fullname" . }}-test-host-connection"
+  name: "test-{{ include "mysql-chart.fullname" . }}-host-connection"
   labels:
     {{- include "mysql-chart.labels" . | nindent 4 }}
   annotations:
@@ -17,8 +17,20 @@ spec:
       command:
       - /bin/bash
       - -c
-      - >
-          IP=$(kubectl get pods {{ include "mysql-chart.fullname" . }}-0 -o wide | tail -n 1 | awk '{ print $6 }';);
-          ping -c 3 $IP;
-          exit $?;
+      - > 
+          i=0;
+          len=$(kubectl get pods --no-headers | grep '{{ include "mysql-chart.fullname" . }}-[0-9]' | wc -l);
+
+          echo "HOST COUNT ${len}";
+
+          for((i = 0; i < len; i++)) do
+            IP=$(kubectl get pods "{{ include "mysql-chart.fullname" . }}-$i" -o wide --no-headers  | tail -n 1 | awk '{ print $6 }';);
+            ping -c 3 $IP;
+            echo $?;
+            if [ $? != "0" ]; then
+              exit 1;
+            fi;
+          done;
+
+          exit 0;
   restartPolicy: Never
