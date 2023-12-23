@@ -37,8 +37,8 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-          - name: MYSQL_RANDOM_ROOT_PASSWORD
-            value: "{{ .Values.mysql.randomPassword }}"
+          - name: MYSQL_ROOT_PASSWORD
+            value: "{{ .Values.mysql.password }}"
           ports:
             - name: tcp
               containerPort: {{ .Values.service.port }}
