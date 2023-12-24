@@ -1,0 +1,1 @@
+kubectl --namespace mysql run -it --rm test-shell --image=k8s.gcr.io/hyperkube:v1.12.1 -- bash

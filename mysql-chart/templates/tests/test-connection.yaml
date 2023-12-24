@@ -2,7 +2,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: "test-{{ include "mysql-chart.fullname" . }}-host-connection"
+  namespace: mysql
   labels:
+    app: {{ .Release.Name }}
     {{- include "mysql-chart.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook-delete-policy": before-hook-creation,post-install,post-upgrade
@@ -19,12 +21,13 @@ spec:
       - -c
       - > 
           i=0;
-          len=$(kubectl get pods --no-headers | grep '{{ include "mysql-chart.fullname" . }}-[0-9]' | wc -l);
+
+          len=$(kubectl get pods --no-headers -n mysql | grep "{{ .Release.Name }}-[0-9]" | wc -l);
 
           echo "HOST COUNT ${len}";
 
           for((i = 0; i < len; i++)) do
-            IP=$(kubectl get pods "{{ include "mysql-chart.fullname" . }}-$i" -o wide --no-headers  | tail -n 1 | awk '{ print $6 }';);
+            IP=$(kubectl get pods "{{ .Release.Name }}-$i" -o wide --no-headers -n mysql | tail -n 1 | awk '{ print $6 }';);
             ping -c 3 $IP;
             echo $?;
             if [ $? != "0" ]; then

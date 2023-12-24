@@ -1,8 +1,10 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "mysql-chart.fullname" . }}
+  name: {{ .Release.Name }}
+  namespace: mysql
   labels:
+    app: {{ .Release.Name }}
     {{- include "mysql-chart.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
@@ -13,11 +15,13 @@ spec:
       {{- include "mysql-chart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      namespace: mysql
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        app: {{ .Release.Name }}
         {{- include "mysql-chart.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
