@@ -4,7 +4,6 @@ metadata:
   name: {{ .Release.Name }}
   namespace: mysql
   labels:
-    app: {{ .Release.Name }}
     {{- include "mysql-chart.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
@@ -21,7 +20,6 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        app: {{ .Release.Name }}
         {{- include "mysql-chart.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}

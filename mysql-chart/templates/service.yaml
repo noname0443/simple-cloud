@@ -4,7 +4,6 @@ metadata:
   name: {{ include "mysql-chart.fullname" . }}
   namespace: mysql
   labels:
-    app: {{ .Release.Name }}
     {{- include "mysql-chart.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
