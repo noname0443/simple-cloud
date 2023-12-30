@@ -11,5 +11,9 @@ spec:
     - name: tcp
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
+    - port: 2888
+      name: server
+    - port: 3888
+      name: leader-election
   selector:
     {{- include "mysql-chart.selectorLabels" . | nindent 4 }}

@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "mysql-chart.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "mysql-chart.fullname" . }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
@@ -33,11 +34,11 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: mysql-{{ .Release.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "mysql:8.0"
+          imagePullPolicy: IfNotPresent
           env:
           - name: MYSQL_ROOT_PASSWORD
             value: "{{ .Values.mysql.password }}"
@@ -50,6 +51,55 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        - name: zookeeper-{{ .Release.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "registry.k8s.io/kubernetes-zookeeper:1.0-3.4.10"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: client
+              containerPort: 2181
+            - name: server
+              containerPort: 2888
+            - name: leader-election
+              containerPort: 3888
+          command:
+          - sh
+          - -c
+          - "start-zookeeper \
+            --servers={{ .Values.replicaCount }} \
+            --data_dir=/var/lib/zookeeper/data \
+            --data_log_dir=/var/lib/zookeeper/data/log \
+            --conf_dir=/opt/zookeeper/conf \
+            --client_port=2181 \
+            --election_port=3888 \
+            --server_port=2888 \
+            --tick_time=2000 \
+            --init_limit=10 \
+            --sync_limit=5 \
+            --heap=512M \
+            --max_client_cnxns=60 \
+            --snap_retain_count=3 \
+            --purge_interval=12 \
+            --max_session_timeout=40000 \
+            --min_session_timeout=4000 \
+            --log_level=INFO"
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "zookeeper-ready 2181"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "zookeeper-ready 2181"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
