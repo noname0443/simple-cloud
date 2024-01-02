@@ -15,3 +15,21 @@ spec:
   selector:
     matchLabels:
       volume: {{ .Release.Name }}-pv-volume
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-pvc-conf
+  namespace: mysql
+spec:
+  volumeMode: Filesystem
+  volumeName: {{ .Release.Name }}-pv-conf
+  storageClassName: ""
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10M
+  selector:
+    matchLabels:
+      volume: {{ .Release.Name }}-pv-conf

@@ -26,6 +26,22 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      initContainers:
+      - name: init-mysql
+        image: mysql:8.0
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          [[ $HOSTNAME =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          touch /mnt/conf.d/server-id.cnf
+          echo [mysqld] > /mnt/conf.d/server-id.cnf
+          echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/server-id.cnf
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/conf.d
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -48,8 +64,10 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-          - name: {{ .Release.Name }}
+          - name: storage
             mountPath: "/data"
+          - name: conf
+            mountPath: "/etc/mysql/conf.d/"
         - name: zookeeper-{{ .Release.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
@@ -100,9 +118,12 @@ spec:
             initialDelaySeconds: 10
             timeoutSeconds: 5
       volumes:
-        - name: {{ .Release.Name }}
+        - name: storage
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-pvc
+        - name: conf
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-pvc-conf
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
