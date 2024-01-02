@@ -36,10 +36,16 @@ spec:
           set -ex
           [[ $HOSTNAME =~ -([0-9]+)$ ]] || exit 1
           ordinal=${BASH_REMATCH[1]}
-          touch /mnt/conf.d/server-id.cnf
-          echo [mysqld] > /mnt/conf.d/server-id.cnf
-          echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/server-id.cnf
+
+          mkdir -p /mnt/conf.d/$HOSTNAME
+          mkdir -p /mnt/data/$HOSTNAME
+
+          touch /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo [mysqld] > /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/$HOSTNAME/server-id.cnf
         volumeMounts:
+        - name: storage
+          mountPath: "/mnt/data"
         - name: conf
           mountPath: /mnt/conf.d
       {{- with .Values.imagePullSecrets }}
@@ -58,6 +64,11 @@ spec:
           env:
           - name: MYSQL_ROOT_PASSWORD
             value: "{{ .Values.mysql.password }}"
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
           ports:
           - name: tcp
             containerPort: {{ .Values.service.port }}
@@ -65,10 +76,18 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
           - name: storage
-            mountPath: "/data"
+            mountPath: "/var/lib/mysql"
+            subPathExpr: $(POD_NAME)
           - name: conf
             mountPath: "/etc/mysql/conf.d/"
+            subPathExpr: $(POD_NAME)
         - name: zookeeper-{{ .Release.Name }}
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "registry.k8s.io/kubernetes-zookeeper:1.0-3.4.10"

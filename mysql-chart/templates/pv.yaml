@@ -13,7 +13,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/data"
+    path: "/data/{{ .Release.Name }}-binlogs"
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -30,4 +30,4 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/data"
+    path: "/data/{{ .Release.Name }}-conf"
