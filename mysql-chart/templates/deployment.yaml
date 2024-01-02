@@ -43,14 +43,13 @@ spec:
           - name: MYSQL_ROOT_PASSWORD
             value: "{{ .Values.mysql.password }}"
           ports:
-            - name: tcp
-              containerPort: {{ .Values.service.port }}
+          - name: tcp
+            containerPort: {{ .Values.service.port }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+          - name: {{ .Release.Name }}
+            mountPath: "/data"
         - name: zookeeper-{{ .Release.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
@@ -100,10 +99,10 @@ spec:
               - "zookeeper-ready 2181"
             initialDelaySeconds: 10
             timeoutSeconds: 5
-      {{- with .Values.volumes }}
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: {{ .Release.Name }}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -5,6 +5,7 @@ metadata:
   namespace: mysql
   labels:
     {{- include "mysql-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
   annotations:
     "helm.sh/hook-delete-policy": before-hook-creation,post-install,post-upgrade
     "helm.sh/hook": test,post-install
@@ -12,7 +13,7 @@ metadata:
 spec:
   serviceAccountName: {{ include "mysql-chart.serviceAccountName" . }}
   containers:
-    - name: ping-and-mysql-conn
+    - name: ping-conn
       image: "k8s.gcr.io/hyperkube:v1.12.1"
       imagePullPolicy: "IfNotPresent"
       command:
@@ -21,14 +22,8 @@ spec:
       - > 
           set -e
 
-          len=$(kubectl get pods --no-headers -n mysql | grep "{{ .Release.Name }}-[0-9]" | wc -l);
-
-          echo "HOST COUNT ${len}";
-
-          i=0;
-          for((i = 0; i < len; i++)) do
-            IP=$(kubectl get pods "{{ .Release.Name }}-$i" -o wide --no-headers -n mysql | tail -n 1 | awk '{ print $6 }';);
-            ping -c 3 $IP;
+          for((i = 0; i < {{ .Values.replicaCount }}; i++)) do
+            ping -c 3 "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local";
           done;
 
           exit 0;
