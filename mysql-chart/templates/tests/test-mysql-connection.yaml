@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "mysql-chart.labels" . | nindent 4 }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+    purpose: job
   annotations:
     "helm.sh/hook-delete-policy": before-hook-creation,post-install,post-upgrade
     "helm.sh/hook": test,post-install
@@ -23,7 +24,7 @@ spec:
           set -e
 
           for((i = 0; i < {{ .Values.replicaCount }}; i++)) do
-            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "SELECT 1;";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u user -e "SELECT 1;";
           done;
 
           exit 0;

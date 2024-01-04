@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "mysql-chart.labels" . | nindent 4 }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+    purpose: job
   annotations:
     "helm.sh/hook-delete-policy": before-hook-creation,post-install,post-upgrade
     "helm.sh/hook": test,post-install

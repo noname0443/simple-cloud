@@ -28,7 +28,7 @@ spec:
     spec:
       initContainers:
       - name: init-mysql
-        image: mysql:8.0
+        image: "noname0443/mysync8.0:v0.1"
         command:
         - bash
         - "-c"
@@ -37,12 +37,18 @@ spec:
           [[ $HOSTNAME =~ -([0-9]+)$ ]] || exit 1
           ordinal=${BASH_REMATCH[1]}
 
+          rm -rf /mnt/conf.d/$HOSTNAME/*
+          rm -rf /mnt/data/$HOSTNAME/*
+
           mkdir -p /mnt/conf.d/$HOSTNAME
           mkdir -p /mnt/data/$HOSTNAME
 
           touch /mnt/conf.d/$HOSTNAME/server-id.cnf
+
           echo [mysqld] > /mnt/conf.d/$HOSTNAME/server-id.cnf
           echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+
+          cp -a /var/lib/mysql/. /mnt/data/$HOSTNAME/
         volumeMounts:
         - name: storage
           mountPath: "/mnt/data"
@@ -59,8 +65,8 @@ spec:
         - name: mysql-{{ .Release.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "mysql:8.0"
-          imagePullPolicy: IfNotPresent
+          image: "noname0443/mysync8.0:v0.1"
+          imagePullPolicy: Always
           env:
           - name: MYSQL_ROOT_PASSWORD
             value: "{{ .Values.mysql.password }}"

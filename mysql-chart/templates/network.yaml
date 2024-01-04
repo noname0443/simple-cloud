@@ -12,6 +12,9 @@ spec:
       - podSelector:
           matchLabels:
             app.kubernetes.io/instance: {{ .Release.Name }}
+      - podSelector:
+          matchLabels:
+            purpose: job
       - namespaceSelector:
           matchLabels:
-            purpose: prod
+            purpose: k8s
