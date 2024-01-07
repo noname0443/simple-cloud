@@ -41,6 +41,8 @@ securityContext: {}
 
 mysql:
   password: "root"
+  repl_user: "repl"
+  repl_pass: "repl_pass"
 
 service:
   type: NodePort

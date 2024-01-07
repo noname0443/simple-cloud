@@ -46,13 +46,26 @@ spec:
           touch /mnt/conf.d/$HOSTNAME/server-id.cnf
 
           echo [mysqld] > /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "plugin_load_add = 'rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so'" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
 
-          cp -a /var/lib/mysql/. /mnt/data/$HOSTNAME/
+          echo "pid_file=/var/lib/mysql/mysqld.pid" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "gtid_mode=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "enforce_gtid_consistency=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+
+          echo "log_slave_updates=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "binlog_format=ROW" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "sync_binlog=1" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "innodb_flush_log_at_trx_commit=1" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+
+          echo "read_only=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "super_read_only=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          echo "default_authentication_plugin=mysql_native_password" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+
+          echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/$HOSTNAME/server-id.cnf
         volumeMounts:
         - name: storage
           mountPath: "/mnt/data"
-        - name: conf
+        - name: conf-mysql
           mountPath: /mnt/conf.d
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -68,6 +81,12 @@ spec:
           image: "noname0443/mysync8.0:v0.1"
           imagePullPolicy: Always
           env:
+          - name: MYSQL_REPL_USER
+            value: "{{ .Values.mysql.repl_user }}"
+          - name: MASTER
+            value: "{{ print .Release.Name "-0." .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
+          - name: MYSQL_REPL_PASSWORD
+            value: "{{ .Values.mysql.repl_pass }}"
           - name: MYSQL_ROOT_PASSWORD
             value: "{{ .Values.mysql.password }}"
           - name: POD_NAME
@@ -75,16 +94,20 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.name
+          - name: HOSTNAME
+            value: "$(POD_NAME).{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
           ports:
           - name: tcp
             containerPort: {{ .Values.service.port }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+          - name: mysync-config
+            mountPath: "/etc/configs"
           - name: storage
             mountPath: "/var/lib/mysql"
             subPathExpr: $(POD_NAME)
-          - name: conf
+          - name: conf-mysql
             mountPath: "/etc/mysql/conf.d/"
             subPathExpr: $(POD_NAME)
         - name: zookeeper-{{ .Release.Name }}
@@ -143,12 +166,15 @@ spec:
             initialDelaySeconds: 10
             timeoutSeconds: 5
       volumes:
+        - name: mysync-config
+          configMap:
+            name: mysql-config-{{ .Release.Name }}
         - name: storage
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-pvc
-        - name: conf
+        - name: conf-mysql
           persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-pvc-conf
+            claimName: {{ .Release.Name }}-pvc-conf-mysql
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

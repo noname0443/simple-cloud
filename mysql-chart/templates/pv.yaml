@@ -18,16 +18,16 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Release.Name }}-pv-conf
+  name: {{ .Release.Name }}-pv-conf-mysql
   namespace: mysql
 spec:
   storageClassName: ""
   claimRef:
-    name: {{ .Release.Name }}-pvc-conf
+    name: {{ .Release.Name }}-pvc-conf-mysql
     namespace: mysql
   capacity:
-    storage: 10M
+    storage: 5M
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/data/{{ .Release.Name }}-conf"
+    path: "/data/{{ .Release.Name }}-conf-mysql"

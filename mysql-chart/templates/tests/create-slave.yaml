@@ -23,15 +23,13 @@ spec:
       - > 
           set -e
 
-          pass=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '');
-
-          mysql -h "{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "CREATE USER 'repl'@'%' IDENTIFIED WITH mysql_native_password BY '$pass';GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';FLUSH PRIVILEGES;";
-
-          pos=$(mysql -h "{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "show master status" 2>/dev/null | tail -n 1 | awk '{ printf $2; }');
-          file=$(mysql -h "{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "show master status" 2>/dev/null | tail -n 1 | awk '{ printf $1; }');
+          pass={{ .Values.mysql.repl_pass }}
+          user={{ .Values.mysql.repl_user }}
 
           for((i = 1; i < {{ .Values.replicaCount }}; i++)) do
-            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "CHANGE REPLICATION SOURCE TO SOURCE_HOST='{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local', SOURCE_USER='repl', SOURCE_PASSWORD='$pass', SOURCE_LOG_FILE='$file', SOURCE_LOG_POS=$pos;start replica;";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "RESET REPLICA FOR CHANNEL '';";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "CHANGE MASTER TO MASTER_HOST = '{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local', MASTER_USER = '$user', MASTER_PASSWORD = '$pass', MASTER_AUTO_POSITION = 1, MASTER_CONNECT_RETRY = 1, MASTER_RETRY_COUNT = 100500 FOR CHANNEL '';";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "START REPLICA;";
           done;
 
           exit 0;

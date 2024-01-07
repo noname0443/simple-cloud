@@ -1,18 +1,29 @@
 #!/bin/bash
 
+( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
+
+if [ ! -f /tmp/usedspace ]; then
+    echo 10 > /tmp/usedspace
+fi
+if [ ! -f /tmp/readonly ]; then
+    echo "false" > /tmp/readonly
+fi
+
+if [ ! -f /tmp/cluster_initialized ]; then
+    rm -rf /var/lib/mysql/*
+    mysqld --initialize --init-file=/etc/configs/init.sql
+    echo 'true' > /tmp/cluster_initialized
+fi
+
 chown mysql:mysql -R /var/lib/mysql
 
 service mysql start
 
-mysql -e "SELECT 1;"
+mysql -proot -e "SELECT 1;"
 while [ $? != 0 ]
 do
-mysql -e "SELECT 1;"
+mysql -proot -e "SELECT 1;"
 done
-
-mysql -e "CREATE USER 'root'@'10.%.%.%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';GRANT ALL PRIVILEGES ON *.* TO 'root'@'10.%.%.%' WITH GRANT OPTION;FLUSH PRIVILEGES;"
-mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';"
-mysql -proot -e "CREATE USER 'user'@'%' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';GRANT ALL PRIVILEGES ON *.* TO 'user'@'%';FLUSH PRIVILEGES;"
 
 while :
 do

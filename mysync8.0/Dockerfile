@@ -17,6 +17,5 @@ COPY ./start.sh /start.sh
 COPY ./mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 
 RUN chmod +x /etc/init.d/mysync-init
-COPY ./mysync.yaml /etc/mysync.yaml
 
 CMD [ "/bin/bash", "/start.sh" ]

@@ -19,11 +19,11 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ .Release.Name }}-pvc-conf
+  name: {{ .Release.Name }}-pvc-conf-mysql
   namespace: mysql
 spec:
   volumeMode: Filesystem
-  volumeName: {{ .Release.Name }}-pv-conf
+  volumeName: {{ .Release.Name }}-pv-conf-mysql
   storageClassName: ""
   accessModes:
   - ReadWriteMany
@@ -32,4 +32,4 @@ spec:
       storage: 10M
   selector:
     matchLabels:
-      volume: {{ .Release.Name }}-pv-conf
+      volume: {{ .Release.Name }}-pv-conf-mysql
