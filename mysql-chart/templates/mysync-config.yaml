@@ -70,13 +70,19 @@ data:
     CREATE USER user@'%' IDENTIFIED BY '{{ .Values.mysql.password }}';
     GRANT ALL ON *.* TO user@'%';
     GRANT REPLICATION SLAVE ON *.* TO {{ .Values.mysql.repl_user }}@'%';
-    CREATE DATABASE test1;
     RESET MASTER;
     SET GLOBAL super_read_only = 1;
-  slave.sql: |
-    RESET SLAVE FOR CHANNEL '';
-    CHANGE MASTER TO MASTER_HOST = '{{ print "- " .Release.Name "-0." .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}', MASTER_USER = '{{ .Values.mysql.repl_user }}', MASTER_PASSWORD = '{{ .Values.mysql.repl_pass }}', MASTER_AUTO_POSITION = 1, MASTER_CONNECT_RETRY = 1, MASTER_RETRY_COUNT = 100500 FOR CHANNEL '';
-    START SLAVE;
-  restart-mysync.sh: |
-    #!/bin/bash
-    ps aux | pgrep mysync | xargs kill -9
+  server.cnf: |
+    [mysqld]
+    plugin_load_add = 'rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so'
+    pid_file=/var/lib/mysql/mysqld.pid
+    gtid_mode=ON
+    enforce_gtid_consistency=ON
+    log_slave_updates=ON
+    binlog_format=ROW
+    sync_binlog=1
+    innodb_flush_log_at_trx_commit=1
+    read_only=ON
+    super_read_only=ON
+    default_authentication_plugin=mysql_native_password
+    server-id=$SERVER_ID

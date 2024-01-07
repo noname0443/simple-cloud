@@ -4,7 +4,7 @@ metadata:
   name: {{ .Release.Name }}-pv-volume
   namespace: mysql
 spec:
-  storageClassName: ""
+  storageClassName: local-storage
   claimRef:
     name: {{ .Release.Name }}-pvc
     namespace: mysql
@@ -12,22 +12,6 @@ spec:
     storage: 2Gi
   accessModes:
     - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
   hostPath:
     path: "/data/{{ .Release.Name }}-binlogs"
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ .Release.Name }}-pv-conf-mysql
-  namespace: mysql
-spec:
-  storageClassName: ""
-  claimRef:
-    name: {{ .Release.Name }}-pvc-conf-mysql
-    namespace: mysql
-  capacity:
-    storage: 5M
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/data/{{ .Release.Name }}-conf-mysql"

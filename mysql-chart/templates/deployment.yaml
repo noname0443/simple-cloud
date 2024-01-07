@@ -37,36 +37,11 @@ spec:
           [[ $HOSTNAME =~ -([0-9]+)$ ]] || exit 1
           ordinal=${BASH_REMATCH[1]}
 
-          rm -rf /mnt/conf.d/$HOSTNAME/*
-          rm -rf /mnt/data/$HOSTNAME/*
-
-          mkdir -p /mnt/conf.d/$HOSTNAME
           mkdir -p /mnt/data/$HOSTNAME
-
-          touch /mnt/conf.d/$HOSTNAME/server-id.cnf
-
-          echo [mysqld] > /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "plugin_load_add = 'rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so'" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-
-          echo "pid_file=/var/lib/mysql/mysqld.pid" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "gtid_mode=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "enforce_gtid_consistency=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-
-          echo "log_slave_updates=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "binlog_format=ROW" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "sync_binlog=1" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "innodb_flush_log_at_trx_commit=1" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-
-          echo "read_only=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "super_read_only=ON" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-          echo "default_authentication_plugin=mysql_native_password" >> /mnt/conf.d/$HOSTNAME/server-id.cnf
-
-          echo server-id=$((1000 + $ordinal)) >> /mnt/conf.d/$HOSTNAME/server-id.cnf
+          rm -rf /mnt/data/$HOSTNAME/*
         volumeMounts:
         - name: storage
           mountPath: "/mnt/data"
-        - name: conf-mysql
-          mountPath: /mnt/conf.d
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -106,9 +81,6 @@ spec:
             mountPath: "/etc/configs"
           - name: storage
             mountPath: "/var/lib/mysql"
-            subPathExpr: $(POD_NAME)
-          - name: conf-mysql
-            mountPath: "/etc/mysql/conf.d/"
             subPathExpr: $(POD_NAME)
         - name: zookeeper-{{ .Release.Name }}
           env:
@@ -172,9 +144,6 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-pvc
-        - name: conf-mysql
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-pvc-conf-mysql
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

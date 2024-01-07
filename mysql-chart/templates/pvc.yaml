@@ -8,28 +8,10 @@ spec:
   volumeName: {{ .Release.Name }}-pv-volume
   storageClassName: ""
   accessModes:
-  - ReadWriteMany
+  - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 2Gi
   selector:
     matchLabels:
       volume: {{ .Release.Name }}-pv-volume
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: {{ .Release.Name }}-pvc-conf-mysql
-  namespace: mysql
-spec:
-  volumeMode: Filesystem
-  volumeName: {{ .Release.Name }}-pv-conf-mysql
-  storageClassName: ""
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 10M
-  selector:
-    matchLabels:
-      volume: {{ .Release.Name }}-pv-conf-mysql

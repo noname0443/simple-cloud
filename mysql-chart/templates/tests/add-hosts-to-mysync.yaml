@@ -27,8 +27,5 @@ spec:
             kubectl exec -n mysql -c mysql-{{ .Release.Name }} {{ .Release.Name }}-0 -- mysync host add {{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local;
           done;
 
-          kubectl exec -n mysql -c mysql-{{ .Release.Name }} {{ .Release.Name }}-0 -- mysync maint on;
-          kubectl exec -n mysql -c mysql-{{ .Release.Name }} {{ .Release.Name }}-0 -- mysync maint off;
-
           exit 0;
   restartPolicy: Never
