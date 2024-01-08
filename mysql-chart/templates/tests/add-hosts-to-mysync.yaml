@@ -24,7 +24,8 @@ spec:
           set -e
 
           for((i = 0; i < {{ .Values.replicaCount }}; i++)) do
-            kubectl exec -n mysql -c mysql-{{ .Release.Name }} {{ .Release.Name }}-0 -- mysync host add {{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local;
+            sleep {{ .Values.createSlaveWaitTime }};
+            kubectl exec -n mysql -c mysql {{ .Release.Name }}-0 -- mysync host add {{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local;
           done;
 
           exit 0;

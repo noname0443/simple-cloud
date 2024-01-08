@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "mysql-chart.labels" . | nindent 4 }}
 spec:
+  podManagementPolicy: "Parallel"
   serviceName: {{ include "mysql-chart.fullname" . }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -51,7 +52,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: mysql-{{ .Release.Name }}
+        - name: mysql
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.images.mysql.repository }}:{{ .Values.images.mysql.tag }}"
@@ -88,7 +89,7 @@ spec:
               command:
               - sh
               - -c
-              - "mysqladmin ping -p{{ .Values.mysql.password }} -u {{ .Values.mysql.root_user }}"
+              - "mysqladmin ping -p{{ .Values.mysql.password }} -u {{ .Values.mysql.root_user }} -h $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
             initialDelaySeconds: 5
             timeoutSeconds: 5
           livenessProbe:
@@ -96,10 +97,10 @@ spec:
               command:
               - sh
               - -c
-              - "mysqladmin ping -p{{ .Values.mysql.password }} -u {{ .Values.mysql.root_user }}"
-            initialDelaySeconds: 30
+              - "mysqladmin ping -p{{ .Values.mysql.password }} -u {{ .Values.mysql.root_user }} -h $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
+            initialDelaySeconds: 10
             timeoutSeconds: 5
-        - name: zookeeper-{{ .Release.Name }}
+        - name: zookeeper
           env:
           - name: POD_NAME
             valueFrom:
@@ -117,6 +118,8 @@ spec:
               containerPort: 2888
             - name: leader-election
               containerPort: 3888
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           command:
           - sh
           - -c
@@ -163,13 +166,5 @@ spec:
             claimName: {{ .Release.Name }}-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
