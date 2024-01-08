@@ -28,7 +28,8 @@ spec:
     spec:
       initContainers:
       - name: init-mysql
-        image: "noname0443/mysync8.0:v0.1"
+        image: "{{ .Values.images.mysql.repository }}:{{ .Values.images.mysql.tag }}"
+        imagePullPolicy: {{ .Values.images.mysql.pullPolicy }}
         command:
         - bash
         - "-c"
@@ -53,15 +54,15 @@ spec:
         - name: mysql-{{ .Release.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "noname0443/mysync8.0:v0.1"
-          imagePullPolicy: Always
+          image: "{{ .Values.images.mysql.repository }}:{{ .Values.images.mysql.tag }}"
+          imagePullPolicy: {{ .Values.images.mysql.pullPolicy }}
           env:
           - name: MYSQL_REPL_USER
             value: "{{ .Values.mysql.repl_user }}"
-          - name: MASTER
-            value: "{{ print .Release.Name "-0." .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
           - name: MYSQL_REPL_PASSWORD
             value: "{{ .Values.mysql.repl_pass }}"
+          - name: MYSQL_ROOT_USER
+            value: "{{ .Values.mysql.root_user }}"
           - name: MYSQL_ROOT_PASSWORD
             value: "{{ .Values.mysql.password }}"
           - name: POD_NAME
@@ -87,7 +88,7 @@ spec:
               command:
               - sh
               - -c
-              - "mysqladmin ping -p$MYSQL_ROOT_PASSWORD"
+              - "mysqladmin ping -p{{ .Values.mysql.password }} -u {{ .Values.mysql.root_user }}"
             initialDelaySeconds: 5
             timeoutSeconds: 5
           livenessProbe:
@@ -95,7 +96,7 @@ spec:
               command:
               - sh
               - -c
-              - "mysqladmin ping -p$MYSQL_ROOT_PASSWORD"
+              - "mysqladmin ping -p{{ .Values.mysql.password }} -u {{ .Values.mysql.root_user }}"
             initialDelaySeconds: 30
             timeoutSeconds: 5
         - name: zookeeper-{{ .Release.Name }}
@@ -107,8 +108,8 @@ spec:
                 fieldPath: metadata.name
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "registry.k8s.io/kubernetes-zookeeper:1.0-3.4.10"
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.images.zookeeper.repository }}:{{ .Values.images.zookeeper.tag }}"
+          imagePullPolicy: {{ .Values.images.zookeeper.pullPolicy }}
           ports:
             - name: client
               containerPort: 2181

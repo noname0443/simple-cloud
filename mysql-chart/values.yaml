@@ -4,15 +4,23 @@
 
 replicaCount: 1
 
-image:
-  repository: mysql
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "8.0"
+images:
+  mysql:
+    repository: noname0443/mysync8.0
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "v0.1"
+  zookeeper:
+    repository: registry.k8s.io/kubernetes-zookeeper
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "1.0-3.4.10"
 
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
+
+createSlaveWaitTime: 30
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -40,7 +48,13 @@ securityContext: {}
   # runAsUser: 1000
 
 mysql:
+  user: "user"
+  user_password: "user"
+  user_database: "db1"
+
+  root_user: "root"
   password: "root"
+
   repl_user: "repl"
   repl_pass: "repl_pass"
 

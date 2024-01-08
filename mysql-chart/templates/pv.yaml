@@ -12,6 +12,5 @@ spec:
     storage: 2Gi
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Recycle
   hostPath:
     path: "/data/{{ .Release.Name }}-binlogs"

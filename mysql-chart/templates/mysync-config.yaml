@@ -20,7 +20,7 @@ data:
     resetup_crashed_hosts: false
     hostname: $HOSTNAME
     mysql:
-      user: root
+      user: {{ .Values.mysql.root_user }}
       password: {{ .Values.mysql.password }}
       replication_user: {{ .Values.mysql.repl_user }}
       replication_password: {{ .Values.mysql.repl_pass }}
@@ -41,7 +41,7 @@ data:
     stream_from_reasonable_lag: 5m
     exclude_users:
       - 'repl'
-      - 'root'
+      - '{{ .Values.mysql.root_user }}'
     replication_repair_cooldown: 10s
     replication_repair_aggressive_mode: false
     test_filesystem_readonly_file: /tmp/readonly
@@ -66,13 +66,20 @@ data:
 
   init.sql: |
     SET GLOBAL super_read_only = 0;
-    CREATE USER 'root'@'10.%.%.%' IDENTIFIED BY '{{ .Values.mysql.password }}';
-    ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ .Values.mysql.password }}';
-    GRANT ALL PRIVILEGES ON *.* TO 'root'@'10.%.%.%' WITH GRANT OPTION;
+
+    DROP USER 'root'@'localhost';
+
+    CREATE USER '{{ .Values.mysql.root_user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.password }}';
+    GRANT ALL PRIVILEGES ON *.* TO '{{ .Values.mysql.root_user }}'@'%' WITH GRANT OPTION;
+
     CREATE USER {{ .Values.mysql.repl_user }}@'%' IDENTIFIED BY '{{ .Values.mysql.repl_pass }}';
-    CREATE USER user@'%' IDENTIFIED BY '{{ .Values.mysql.password }}';
-    GRANT ALL ON *.* TO user@'%';
     GRANT REPLICATION SLAVE ON *.* TO {{ .Values.mysql.repl_user }}@'%';
+
+    CREATE DATABASE {{ .Values.mysql.user_database }};
+
+    CREATE USER {{ .Values.mysql.user }}@'%' IDENTIFIED BY '{{ .Values.mysql.user_password }}';
+    GRANT ALL ON {{ .Values.mysql.user_database }}.* TO {{ .Values.mysql.user }}@'%';
+
     RESET MASTER;
     SET GLOBAL super_read_only = 1;
   server.cnf: |
