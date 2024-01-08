@@ -48,8 +48,11 @@ data:
     replication_channel: ''
     external_replication_type: 'off'
     semi_sync: true
-    rpl_semi_sync_master_wait_for_slave_count: 1
-    semi_sync_enable_lag: 33554432
+  {{ if eq .Values.replicaCount 1 }}
+    rpl_semi_sync_master_wait_for_slave_count: 0
+  {{ else }}
+    rpl_semi_sync_master_wait_for_slave_count: {{ div .Values.replicaCount 2 }}
+  {{ end }}
     zookeeper:
       session_timeout: 3s
       namespace: /mysql
