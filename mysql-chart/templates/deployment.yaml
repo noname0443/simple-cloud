@@ -82,6 +82,22 @@ spec:
           - name: storage
             mountPath: "/var/lib/mysql"
             subPathExpr: $(POD_NAME)
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "mysqladmin ping -p$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "mysqladmin ping -p$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
         - name: zookeeper-{{ .Release.Name }}
           env:
           - name: POD_NAME
