@@ -21,7 +21,7 @@ data:
     hostname: $HOSTNAME
     mysql:
       user: {{ .Values.mysql.root_user }}
-      password: {{ .Values.mysql.password }}
+      password: {{ .Values.mysql.root_pass }}
       replication_user: {{ .Values.mysql.repl_user }}
       replication_password: {{ .Values.mysql.repl_pass }}
       port: 3306
@@ -69,7 +69,7 @@ data:
 
     DROP USER 'root'@'localhost';
 
-    CREATE USER '{{ .Values.mysql.root_user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.password }}';
+    CREATE USER '{{ .Values.mysql.root_user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.root_pass }}';
     GRANT ALL PRIVILEGES ON *.* TO '{{ .Values.mysql.root_user }}'@'%' WITH GRANT OPTION;
 
     CREATE USER {{ .Values.mysql.repl_user }}@'%' IDENTIFIED BY '{{ .Values.mysql.repl_pass }}';
