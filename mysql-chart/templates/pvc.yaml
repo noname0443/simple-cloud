@@ -5,13 +5,8 @@ metadata:
   namespace: mysql
 spec:
   volumeMode: Filesystem
-  volumeName: {{ .Release.Name }}-pv-volume
-  storageClassName: ""
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
       storage: 2Gi
-  selector:
-    matchLabels:
-      volume: {{ .Release.Name }}-pv-volume

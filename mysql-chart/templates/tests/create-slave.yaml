@@ -28,9 +28,9 @@ spec:
 
           for((i = 1; i < {{ .Values.replicaCount }}; i++)) do
             sleep {{ .Values.createSlaveWaitTime }};
-            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "RESET REPLICA FOR CHANNEL '';";
-            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "CHANGE MASTER TO MASTER_HOST = '{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local', MASTER_USER = '$user', MASTER_PASSWORD = '$pass', MASTER_AUTO_POSITION = 1, MASTER_CONNECT_RETRY = 1, MASTER_RETRY_COUNT = 100500 FOR CHANNEL '';";
-            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.password }} -u root -e "START REPLICA;";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.root_pass }} -u root -e "RESET REPLICA FOR CHANNEL '';";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.root_pass }} -u root -e "CHANGE MASTER TO MASTER_HOST = '{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local', MASTER_USER = '$user', MASTER_PASSWORD = '$pass', MASTER_AUTO_POSITION = 1, MASTER_CONNECT_RETRY = 1, MASTER_RETRY_COUNT = 100500 FOR CHANNEL '';";
+            mysql -h "{{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local" -p{{ .Values.mysql.root_pass }} -u root -e "START REPLICA;";
           done;
 
           exit 0;

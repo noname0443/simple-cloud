@@ -53,7 +53,7 @@ mysql:
   user_database: "db1"
 
   root_user: "root"
-  password: "root"
+  root_pass: "root"
 
   repl_user: "repl"
   repl_pass: "repl_pass"
