@@ -4,9 +4,8 @@ metadata:
   name: {{ .Release.Name }}-pvc
   namespace: mysql
 spec:
+  resources:
+  {{- toYaml .Values.storageResources.resources | nindent 4 }}
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi

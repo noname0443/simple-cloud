@@ -51,7 +51,7 @@ data:
   {{ if eq .Values.replicaCount 1 }}
     rpl_semi_sync_master_wait_for_slave_count: 0
   {{ else }}
-    rpl_semi_sync_master_wait_for_slave_count: {{ div .Values.replicaCount 2 }}
+    rpl_semi_sync_master_wait_for_slave_count: {{ add (div .Values.replicaCount 2) 1 }}
   {{ end }}
     zookeeper:
       session_timeout: 3s
@@ -67,28 +67,37 @@ data:
   init.sql: |
     SET GLOBAL super_read_only = 0;
 
-    DROP USER 'root'@'localhost';
-
     CREATE USER '{{ .Values.mysql.root_user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.root_pass }}';
     GRANT ALL PRIVILEGES ON *.* TO '{{ .Values.mysql.root_user }}'@'%' WITH GRANT OPTION;
 
-    CREATE USER {{ .Values.mysql.repl_user }}@'%' IDENTIFIED BY '{{ .Values.mysql.repl_pass }}';
-    GRANT REPLICATION SLAVE ON *.* TO {{ .Values.mysql.repl_user }}@'%';
+    CREATE USER '{{ .Values.mysql.repl_user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.repl_pass }}';
+    GRANT REPLICATION SLAVE ON *.* TO '{{ .Values.mysql.repl_user }}'@'%';
 
-    CREATE DATABASE {{ .Values.mysql.user_database }};
+    CREATE DATABASE '{{ .Values.mysql.user_database }}';
 
-    CREATE USER {{ .Values.mysql.user }}@'%' IDENTIFIED BY '{{ .Values.mysql.user_password }}';
-    GRANT ALL ON {{ .Values.mysql.user_database }}.* TO {{ .Values.mysql.user }}@'%';
+    CREATE USER '{{ .Values.mysql.user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.user_password }}';
+    GRANT ALL ON '{{ .Values.mysql.user_database }}'.* TO '{{ .Values.mysql.user }}'@'%';
 
     RESET MASTER;
     SET GLOBAL super_read_only = 1;
+  make-slave.sql: |
+    STOP REPLICA;
+    RESET REPLICA FOR CHANNEL '';
+    CHANGE MASTER TO
+      MASTER_HOST = '{{ .Release.Name }}-0.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local',
+      MASTER_USER = '{{ .Values.mysql.repl_user }}',
+      MASTER_PASSWORD = '{{ .Values.mysql.repl_pass }}',
+      MASTER_AUTO_POSITION = 1,
+      MASTER_CONNECT_RETRY = 1,
+      MASTER_RETRY_COUNT = 100500 FOR CHANNEL '';
+    START REPLICA;
   server.cnf: |
     [mysqld]
     plugin_load_add = 'rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so'
     pid_file=/var/lib/mysql/mysqld.pid
     gtid_mode=ON
     enforce_gtid_consistency=ON
-    log_slave_updates=ON
+    log_replica_updates=ON
     binlog_format=ROW
     sync_binlog=1
     innodb_flush_log_at_trx_commit=1
@@ -96,3 +105,11 @@ data:
     super_read_only=ON
     default_authentication_plugin=mysql_native_password
     server-id=$SERVER_ID
+    log-bin
+  add-host.sh: |
+    #!/bin/bash
+    mysync host add $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }};
+    while [ -z $(mysync hosts | grep $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}) ];
+    do
+      mysync host add $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }};
+    done

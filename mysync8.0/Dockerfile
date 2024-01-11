@@ -9,8 +9,8 @@ RUN mkdir -p /var/run/mysync/
 RUN touch /var/log/mysync.log
 RUN touch /var/run/mysync/mysync.lock
 
-COPY ./mysync /usr/bin/mysync
-COPY ./start.sh /start.sh
-COPY ./mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
+RUN echo 10 > /tmp/usedspace
+RUN echo false > /tmp/readonly
+RUN rm /etc/mysql/mysql.conf.d/mysqld.cnf
 
-CMD [ "/bin/bash", "/start.sh" ]
+COPY ./mysync /usr/bin/mysync

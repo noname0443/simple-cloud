@@ -36,10 +36,35 @@ spec:
       #              values:
       #              - {{ .Release.Name }}
       #        topologyKey: "kubernetes.io/hostname"
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      initContainers:
+      - name: init-mysql
+        image: mysql:8.0
+        command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+            exit 0;
+        env:
+        - name: MYSQL_REPL_USER
+          value: "{{ .Values.mysql.repl_user }}"
+        - name: MYSQL_REPL_PASSWORD
+          value: "{{ .Values.mysql.repl_pass }}"
+        - name: MYSQL_ROOT_USER
+          value: "{{ .Values.mysql.root_user }}"
+        - name: MYSQL_ROOT_PASSWORD
+          value: "{{ .Values.mysql.root_pass }}"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: configs
+          mountPath: "/etc/configs"
+        - name: storage
+          mountPath: "/data/mysql"
+          subPathExpr: $(POD_NAME)
       serviceAccountName: {{ include "mysql-chart.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -69,9 +94,9 @@ spec:
           - name: tcp
             containerPort: {{ .Values.service.port }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.podResources.resources | nindent 12 }}
           volumeMounts:
-          - name: mysync-config
+          - name: configs
             mountPath: "/etc/configs"
           - name: storage
             mountPath: "/var/lib/mysql"
@@ -92,6 +117,41 @@ spec:
               - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
             initialDelaySeconds: 10
             timeoutSeconds: 5
+          command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+            export SERVER_ID=$(($(echo $POD_NAME | grep -Eo "[0-9]*") + 1000))
+
+            ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
+            ( echo "cat <<EOF" ; cat /etc/configs/server.cnf ) | sh > /etc/mysql/conf.d/server.cnf
+
+            if [ -z "$(ls -A /var/lib/mysql)" ]; then
+                mysqld --initialize --init-file=/etc/configs/init.sql || true;
+                chown mysql:mysql -R /var/lib/mysql
+            fi
+            service mysql start
+
+            mysql -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -e "SELECT 1;"
+            while [ $? != 0 ]
+            do
+            mysql -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -e "SELECT 1;"
+            done
+
+            if [ $SERVER_ID -ne 1000 ]; then
+              mysql -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} < /etc/configs/make-slave.sql;
+            fi
+
+            /bin/bash /etc/configs/add-host.sh &
+
+            while :
+            do
+            if ! pgrep -x "mysync" > /dev/null
+            then
+              mysync >> /var/log/mysync.log 2>&1 &
+            fi
+            done
         - name: zookeeper
           env:
           - name: POD_NAME
@@ -111,7 +171,7 @@ spec:
             - name: leader-election
               containerPort: 3888
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.podResources.resources | nindent 12 }}
           command:
           - sh
           - -c
@@ -150,7 +210,7 @@ spec:
             initialDelaySeconds: 10
             timeoutSeconds: 5
       volumes:
-        - name: mysync-config
+        - name: configs
           configMap:
             name: mysql-config-{{ .Release.Name }}
         - name: storage
