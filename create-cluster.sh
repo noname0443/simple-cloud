@@ -9,7 +9,7 @@ if [ -z "$2" ]
     echo "ERROR: enter replica count"
 fi
 
-if [ -z "$2" ]
+if [ -z "$3" ]
   then
     echo "ERROR: enter mysql password"
 fi

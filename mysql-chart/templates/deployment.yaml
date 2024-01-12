@@ -13,6 +13,8 @@ spec:
   selector:
     matchLabels:
       {{- include "mysql-chart.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       namespace: mysql
@@ -44,12 +46,24 @@ spec:
           - "-c"
           - |
             set -ex
-            export SERVER_ID=$(($(echo $POD_NAME | grep -Eo "[0-9]*") + 1000))
+            export SERVER_NUMBER=$(echo $POD_NAME | grep -Eo "[0-9]*")
+            export SERVER_ID=$(($SERVER_NUMBER + 1000))
 
             ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
             ( echo "cat <<EOF" ; cat /etc/configs/server.cnf ) | sh > /etc/mysql/conf.d/server.cnf
 
-            mysqld --initialize --init-file=/etc/configs/init.sql || true;
+            if [ -z "$(ls -A /mnt/cache)" ]; then
+                mysqld --initialize --init-file=/etc/configs/init.sql || true;
+                mkdir /mnt/cache
+                cp -a /var/lib/mysql/. /mnt/cache/
+            fi
+
+            if [ -z "$(ls -A /mnt/$HOSTNAME)" ]; then
+              mkdir /mnt/$HOSTNAME
+              cp -a /mnt/cache/. /mnt/$HOSTNAME/
+              echo "[auto]" > /mnt/$HOSTNAME/auto.cnf
+              echo "server-uuid=$(cat /proc/sys/kernel/random/uuid)" >> /mnt/$HOSTNAME/auto.cnf
+            fi
         env:
         - name: MYSQL_REPL_USER
           value: "{{ .Values.mysql.repl_user }}"
@@ -68,8 +82,7 @@ spec:
         - name: configs
           mountPath: "/etc/configs"
         - name: storage
-          mountPath: "/var/lib/mysql"
-          subPathExpr: $(POD_NAME)
+          mountPath: "/mnt"
       serviceAccountName: {{ include "mysql-chart.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}

@@ -13,4 +13,4 @@ RUN echo 10 > /tmp/usedspace
 RUN echo false > /tmp/readonly
 RUN rm /etc/mysql/mysql.conf.d/mysqld.cnf
 
-COPY ./mysync /usr/bin/mysync
+COPY ./mysync_fork /usr/bin/mysync

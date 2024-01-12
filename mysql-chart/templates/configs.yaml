@@ -7,14 +7,14 @@ data:
   mysync.yaml: |-
     log: /dev/stderr
     loglevel: Debug
-    db_timeout: 5s
+    db_timeout: 3s
     db_lost_check_timeout: 1s
     tick_interval: 2s
-    healthcheck_interval: 5s
+    healthcheck_interval: 3s
     dcs_wait_timeout: 10s
     failover: true
-    failover_cooldown: 3600s
-    failover_delay: 60s
+    failover_cooldown: 60s
+    failover_delay: 30s
     inactivation_delay: -5s
     resetupfile: /tmp/mysync.resetup
     resetup_crashed_hosts: false
@@ -48,13 +48,9 @@ data:
     replication_channel: ''
     external_replication_type: 'off'
     semi_sync: true
-  {{ if eq .Values.replicaCount 1 }}
-    rpl_semi_sync_master_wait_for_slave_count: 0
-  {{ else }}
-    rpl_semi_sync_master_wait_for_slave_count: {{ add (div .Values.replicaCount 2) 1 }}
-  {{ end }}
+    rpl_semi_sync_master_wait_for_slave_count: {{ div .Values.replicaCount 2 }}
     zookeeper:
-      session_timeout: 3s
+      session_timeout: 5s
       namespace: /mysql
       hostname: $HOSTNAME
       hosts:
