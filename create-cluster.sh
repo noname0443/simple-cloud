@@ -15,3 +15,4 @@ if [ -z "$3" ]
 fi
 
 helm install $1 mysql-chart --atomic --set replicaCount=$2 --set mysql.password=$3
+minikube service $1-mysql-cluster -n mysql
