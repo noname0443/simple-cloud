@@ -6,3 +6,15 @@ metadata:
 spec:
   podSelector: {}
   ingress: []
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: services-allow-all
+  namespace: services
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress

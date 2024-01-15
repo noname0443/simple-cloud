@@ -7,12 +7,12 @@ replicaCount: 1
 images:
   mysql:
     repository: noname0443/mysync8.0
-    pullPolicy: Always
+    pullPolicy: Never
     # Overrides the image tag whose default is the chart appVersion.
     tag: "v0.1"
   zookeeper:
     repository: registry.k8s.io/kubernetes-zookeeper
-    pullPolicy: IfNotPresent
+    pullPolicy: Never
     # Overrides the image tag whose default is the chart appVersion.
     tag: "1.0-3.4.10"
 
@@ -56,7 +56,7 @@ mysql:
   repl_pass: "repl_pass"
 
 service:
-  type: NodePort
+  type: LoadBalancer
   port: 3306
 
 podResources:
