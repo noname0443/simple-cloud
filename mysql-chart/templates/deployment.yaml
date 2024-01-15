@@ -124,7 +124,7 @@ spec:
               command:
               - sh
               - -c
-              - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
+              - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME"
             initialDelaySeconds: 10
             timeoutSeconds: 5
           livenessProbe:
@@ -132,7 +132,7 @@ spec:
               command:
               - sh
               - -c
-              - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
+              - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME"
             initialDelaySeconds: 10
             timeoutSeconds: 5
           command:
