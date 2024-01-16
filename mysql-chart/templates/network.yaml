@@ -18,3 +18,9 @@ spec:
       - namespaceSelector:
           matchLabels:
             purpose: k8s
+      - namespaceSelector:
+          matchLabels:
+            purpose: forwarding
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/instance: {{ .Release.Name }}
