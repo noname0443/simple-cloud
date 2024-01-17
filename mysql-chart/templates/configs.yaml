@@ -109,3 +109,18 @@ data:
     do
       mysync host add $POD_NAME.{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }};
     done
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-config-{{ .Release.Name }}
+  namespace: services
+data:
+  get-master.sh: |
+    for((i=0;i<$COUNT;i++)) {
+      master=$(/usr/share/zookeeper/bin/zkCli.sh -server $RELEASE-$i.$RELEASE-mysql-cluster.mysql.svc.cluster.local:2181 get /mysql/master 2>/dev/null | grep -o '"[^"]*"' | tr -d \")
+      if [[ $master ]]; then
+          break;
+      fi
+    }
+    echo $master | tr -d '\n';

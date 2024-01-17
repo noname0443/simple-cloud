@@ -14,13 +14,14 @@ const (
 )
 
 func handleConnection(conn net.Conn, mysql_addr string) {
+  fmt.Println(fmt.Sprintf(MYSQL_CONN, mysql_addr))
 	mysql, err := net.Dial("tcp", fmt.Sprintf(MYSQL_CONN, mysql_addr))
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		return
 	}
 
-	defer conn.Close()
+	defer mysql.Close()
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		return
@@ -30,8 +31,8 @@ func handleConnection(conn net.Conn, mysql_addr string) {
 	io.Copy(mysql, conn)
 }
 
-func handleConnectionWithBash(conn net.Conn, command string) {
-	out, err := exec.Command(command).Output()
+func handleConnectionWithBash(conn net.Conn) {
+	out, err := exec.Command("/bin/bash", "-c", "/sample.sh").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,6 +50,6 @@ func main() {
 		if err != nil {
 			fmt.Printf("%s", err.Error())
 		}
-		go handleConnectionWithBash(conn, "/sample.sh")
+		go handleConnectionWithBash(conn)
 	}
 }
