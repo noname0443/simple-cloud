@@ -11,7 +11,7 @@ spec:
     image: noname0443/mysql-proxy:v0.1
     imagePullPolicy: Never
     ports:
-    - containerPort: 8080
+    - containerPort: 3306
     env:
     - name: COUNT
       value: "{{ .Values.replicaCount }}"

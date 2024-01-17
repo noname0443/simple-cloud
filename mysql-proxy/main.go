@@ -10,7 +10,7 @@ import (
 
 const (
 	MYSQL_CONN  = "%s:3306"
-	SOCKET_CONN = ":8080"
+	SOCKET_CONN = ":3306"
 )
 
 func handleConnection(conn net.Conn, mysql_addr string) {
