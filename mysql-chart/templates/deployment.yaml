@@ -211,6 +211,9 @@ spec:
               - "zookeeper-ready 2181"
             initialDelaySeconds: 10
             timeoutSeconds: 5
+          volumeMounts:
+          - name: zoo-storage
+            mountPath: "/var/lib/zookeeper"
       volumes:
         - name: configs
           configMap:
@@ -226,3 +229,10 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
       {{- toYaml .Values.storageResources.resources | nindent 8 }}
+  - metadata:
+      name: zoo-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Mi
