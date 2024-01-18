@@ -14,3 +14,4 @@ RUN echo false > /tmp/readonly
 RUN rm /etc/mysql/mysql.conf.d/mysqld.cnf
 
 COPY ./mysync_fork /usr/bin/mysync
+RUN chmod +x /usr/bin/mysync

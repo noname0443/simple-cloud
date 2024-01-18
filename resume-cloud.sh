@@ -8,6 +8,7 @@ minikube cp ./resolv.conf /etc/resolv.conf
 minikube addons enable registry
 
 kubectl wait pod --for=condition=Ready --all -n services --timeout 600s
+kubectl wait pod --for=condition=Ready --all -n mysql --timeout 600s
 
 lines=$(kubectl get svc -n services -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.ports[].nodePort}{"\n"}{end}')
 len=$(echo $lines | wc -l)

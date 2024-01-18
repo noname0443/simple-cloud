@@ -60,7 +60,7 @@ data:
         {{ print "- " $releaseName "-" $index0 "." $releaseName "-mysql-cluster.mysql.svc.cluster.local:2181"  | nindent 6 }}
       {{- end }}
 
-  init.sql: |
+  init-master.sql: |
     SET GLOBAL super_read_only = 0;
 
     CREATE USER '{{ .Values.mysql.root_user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.root_pass }}';
@@ -74,6 +74,10 @@ data:
     CREATE USER '{{ .Values.mysql.user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.user_password }}';
     GRANT ALL ON '{{ .Values.mysql.user_database }}'.* TO '{{ .Values.mysql.user }}'@'%';
 
+    RESET MASTER;
+    SET GLOBAL super_read_only = 1;
+  init-slave.sql: |
+    ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ .Values.mysql.root_pass }}';
     RESET MASTER;
     SET GLOBAL super_read_only = 1;
   make-slave.sql: |
@@ -117,8 +121,8 @@ metadata:
   namespace: services
 data:
   get-master.sh: |
-    for((i=0;i<$COUNT;i++)) {
-      master=$(/usr/share/zookeeper/bin/zkCli.sh -server $RELEASE-$i.$RELEASE-mysql-cluster.mysql.svc.cluster.local:2181 get /mysql/master 2>/dev/null | grep -o '"[^"]*"' | tr -d \")
+    for((i=0;i<{{ .Values.replicaCount }};i++)) {
+      master=$(/usr/share/zookeeper/bin/zkCli.sh -server {{ .Release.Name }}-$i.{{ .Release.Name }}-mysql-cluster.mysql.svc.cluster.local:2181 get /mysql/master 2>/dev/null | grep -o '"[^"]*"' | tr -d \")
       if [[ $master ]]; then
           break;
       fi

@@ -12,11 +12,6 @@ spec:
     imagePullPolicy: Always
     ports:
     - containerPort: 3306
-    env:
-    - name: COUNT
-      value: "{{ .Values.replicaCount }}"
-    - name: RELEASE
-      value: "{{ .Release.Name }}"
     volumeMounts:
     - name: configs
       mountPath: /etc/configs

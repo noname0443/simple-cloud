@@ -53,17 +53,10 @@ spec:
             ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
             ( echo "cat <<EOF" ; cat /etc/configs/server.cnf ) | sh > /etc/mysql/conf.d/server.cnf
 
-            if [ -z "$(ls -A /mnt/cache)" ]; then
-                mysqld --initialize --init-file=/etc/configs/init.sql || true;
-                mkdir /mnt/cache
-                cp -a /var/lib/mysql/. /mnt/cache/
-            fi
-
-            if [ -z "$(ls -A /mnt/$HOSTNAME)" ]; then
-              mkdir /mnt/$HOSTNAME
-              cp -a /mnt/cache/. /mnt/$HOSTNAME/
-              echo "[auto]" > /mnt/$HOSTNAME/auto.cnf
-              echo "server-uuid=$(cat /proc/sys/kernel/random/uuid)" >> /mnt/$HOSTNAME/auto.cnf
+            if [ $SERVER_ID -eq 1000 ]; then
+                mysqld --initialize --init-file=/etc/configs/init-master.sql || true;
+            else
+                mysqld --initialize-insecure --init-file=/etc/configs/init-slave.sql || true;
             fi
         env:
         - name: MYSQL_REPL_USER
@@ -83,7 +76,7 @@ spec:
         - name: configs
           mountPath: "/etc/configs"
         - name: storage
-          mountPath: "/mnt"
+          mountPath: "/var/lib/mysql"
       serviceAccountName: {{ include "mysql-chart.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -119,7 +112,6 @@ spec:
             mountPath: "/etc/configs"
           - name: storage
             mountPath: "/var/lib/mysql"
-            subPathExpr: $(POD_NAME)
           readinessProbe:
             exec:
               command:
@@ -150,7 +142,7 @@ spec:
             service mysql start
 
             if [ $SERVER_ID -ne 1000 ]; then
-              mysql -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} < /etc/configs/make-slave.sql;
+              mysql -u root -p{{ .Values.mysql.root_pass }}  < /etc/configs/make-slave.sql;
             fi
 
             /bin/bash /etc/configs/add-host.sh &
