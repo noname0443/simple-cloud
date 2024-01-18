@@ -8,5 +8,4 @@ if [ -z "$2" ]; then
 	echo "ERROR: enter replica count"
 fi
 
-helm upgrade $1 mysql-chart --atomic --set replicaCount=$2
-
+helm upgrade $1 mysql-chart --atomic --set replicaCount=$2 --timeout 10m0s
