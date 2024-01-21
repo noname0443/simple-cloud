@@ -1,11 +1,17 @@
 #!/bin/zsh
 
-if [ -z "$1" ]; then
+name=$1
+count=$2
+pass=$3
+
+if [ -z "$name" ]; then
 	echo "ERROR: enter name of cluster"
+  exit 1;
 fi
 
-if [ -z "$2" ]; then
+if [ -z "$count" ]; then
 	echo "ERROR: enter replica count"
+  exit 2;
 fi
 
-helm upgrade $1 mysql-chart --atomic --set replicaCount=$2 --timeout 10m0s
+helm upgrade $name mysql-chart --atomic --set replicaCount=$count --timeout 10m0s

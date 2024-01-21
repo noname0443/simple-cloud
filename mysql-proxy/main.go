@@ -14,7 +14,6 @@ const (
 )
 
 func handleConnection(conn net.Conn, mysql_addr string) {
-  fmt.Println(fmt.Sprintf(MYSQL_CONN, mysql_addr))
 	mysql, err := net.Dial("tcp", fmt.Sprintf(MYSQL_CONN, mysql_addr))
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())

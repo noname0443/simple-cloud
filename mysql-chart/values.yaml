@@ -1,34 +1,14 @@
-# Default values for mysql-chart.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 replicaCount: 1
 
 images:
   mysql:
     repository: noname0443/mysync8.0
     pullPolicy: Always
-    # Overrides the image tag whose default is the chart appVersion.
     tag: "v0.1"
   zookeeper:
     repository: registry.k8s.io/kubernetes-zookeeper
     pullPolicy: Always
-    # Overrides the image tag whose default is the chart appVersion.
     tag: "1.0-3.4.10"
-
-nameOverride: ""
-fullnameOverride: ""
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
 podAnnotations: {}
 podLabels: {}
@@ -69,25 +49,3 @@ storageResources:
   resources:
     requests:
       storage: 2Gi
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 20
-  # targetMemoryUtilizationPercentage: 80
-
-# Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
-
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
-
-nodeSelector: {}
