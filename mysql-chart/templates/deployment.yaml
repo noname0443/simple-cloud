@@ -1,0 +1,235 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+  namespace: mysql
+  labels:
+    {{- include "mysql-chart.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "mysql-chart.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mysql-chart.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      namespace: mysql
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mysql-chart.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      #affinity:
+      #  podAntiAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #      - labelSelector:
+      #          matchExpressions:
+      #            - key: "app.kubernetes.io/instance"
+      #              operator: In
+      #              values:
+      #              - {{ .Release.Name }}
+      #        topologyKey: "kubernetes.io/hostname"
+      initContainers:
+      - name: init-mysql
+        image: mysql:8.0
+        imagePullPolicy: IfNotPresent
+        command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+            export SERVER_NUMBER=$(echo $POD_NAME | grep -Eo "[0-9]*")
+            export SERVER_ID=$(($SERVER_NUMBER + 1000))
+
+            ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
+            ( echo "cat <<EOF" ; cat /etc/configs/server.cnf ) | sh > /etc/mysql/conf.d/server.cnf
+
+            if [ $SERVER_ID -eq 1000 ]; then
+                mysqld --initialize --init-file=/etc/configs/init-master.sql || true;
+            else
+                mysqld --initialize-insecure --init-file=/etc/configs/init-slave.sql || true;
+            fi
+        env:
+        - name: MYSQL_REPL_USER
+          value: "{{ .Values.mysql.repl_user }}"
+        - name: MYSQL_REPL_PASSWORD
+          value: "{{ .Values.mysql.repl_pass }}"
+        - name: MYSQL_ROOT_USER
+          value: "{{ .Values.mysql.root_user }}"
+        - name: MYSQL_ROOT_PASSWORD
+          value: "{{ .Values.mysql.root_pass }}"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: configs
+          mountPath: "/etc/configs"
+        - name: storage
+          mountPath: "/var/lib/mysql"
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mysql
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.images.mysql.repository }}:{{ .Values.images.mysql.tag }}"
+          imagePullPolicy: {{ .Values.images.mysql.pullPolicy }}
+          env:
+          - name: MYSQL_REPL_USER
+            value: "{{ .Values.mysql.repl_user }}"
+          - name: MYSQL_REPL_PASSWORD
+            value: "{{ .Values.mysql.repl_pass }}"
+          - name: MYSQL_ROOT_USER
+            value: "{{ .Values.mysql.root_user }}"
+          - name: MYSQL_ROOT_PASSWORD
+            value: "{{ .Values.mysql.root_pass }}"
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: HOSTNAME
+            value: "$(POD_NAME).{{ print .Release.Name "-mysql-cluster.mysql.svc.cluster.local" }}"
+          ports:
+          - name: tcp
+            containerPort: {{ .Values.service.port }}
+          resources:
+            {{- toYaml .Values.podResources.resources | nindent 12 }}
+          volumeMounts:
+          - name: configs
+            mountPath: "/etc/configs"
+          - name: storage
+            mountPath: "/var/lib/mysql"
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+            export SERVER_ID=$(($(echo $POD_NAME | grep -Eo "[0-9]*") + 1000))
+
+            ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
+            ( echo "cat <<EOF" ; cat /etc/configs/server.cnf ) | sh > /etc/mysql/conf.d/server.cnf
+
+            chown mysql:mysql -R /var/lib/mysql
+            service mysql start
+
+            if [ $SERVER_ID -ne 1000 ]; then
+              mysql -u root -p{{ .Values.mysql.root_pass }}  < /etc/configs/make-slave.sql;
+            fi
+
+            /bin/bash /etc/configs/add-host.sh &
+
+            while :
+            do
+            if ! pgrep -x "mysync" > /dev/null
+            then
+              mysync >> /var/log/mysync.log 2>&1 &
+            fi
+            done
+        - name: zookeeper
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.images.zookeeper.repository }}:{{ .Values.images.zookeeper.tag }}"
+          imagePullPolicy: {{ .Values.images.zookeeper.pullPolicy }}
+          ports:
+            - name: client
+              containerPort: 2181
+            - name: server
+              containerPort: 2888
+            - name: leader-election
+              containerPort: 3888
+          resources:
+            {{- toYaml .Values.podResources.resources | nindent 12 }}
+          command:
+          - sh
+          - -c
+          - "start-zookeeper \
+            --servers={{ .Values.replicaCount }} \
+            --data_dir=/var/lib/zookeeper/data \
+            --data_log_dir=/var/lib/zookeeper/data/log \
+            --conf_dir=/opt/zookeeper/conf \
+            --client_port=2181 \
+            --election_port=3888 \
+            --server_port=2888 \
+            --tick_time=2000 \
+            --init_limit=10 \
+            --sync_limit=5 \
+            --heap=512M \
+            --max_client_cnxns=60 \
+            --snap_retain_count=3 \
+            --purge_interval=12 \
+            --max_session_timeout=40000 \
+            --min_session_timeout=4000 \
+            --log_level=INFO"
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "zookeeper-ready 2181"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "zookeeper-ready 2181"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+          - name: zoo-storage
+            mountPath: "/var/lib/zookeeper"
+      volumes:
+        - name: configs
+          configMap:
+            name: mysql-config-{{ .Release.Name }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+      {{- toYaml .Values.storageResources.resources | nindent 8 }}
+  - metadata:
+      name: zoo-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Mi

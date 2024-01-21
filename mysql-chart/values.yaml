@@ -1,0 +1,51 @@
+replicaCount: 1
+
+images:
+  mysql:
+    repository: noname0443/mysync8.0
+    pullPolicy: Always
+    tag: "v0.1"
+  zookeeper:
+    repository: registry.k8s.io/kubernetes-zookeeper
+    pullPolicy: Always
+    tag: "1.0-3.4.10"
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+mysql:
+  user: "user"
+  user_password: "user"
+  user_database: "db1"
+
+  root_user: "admin"
+  root_pass: "admin"
+
+  repl_user: "repl"
+  repl_pass: "repl_pass"
+
+service:
+  type: LoadBalancer
+  port: 3306
+
+podResources:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+
+storageResources:
+  resources:
+    requests:
+      storage: 2Gi

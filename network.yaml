@@ -1,0 +1,20 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-deny-all
+  namespace: mysql
+spec:
+  podSelector: {}
+  ingress: []
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: services-allow-all
+  namespace: services
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress

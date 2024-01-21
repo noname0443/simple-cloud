@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}
+  namespace: services
+  labels:
+    {{- include "mysql-chart.labels" . | nindent 4 }}
+spec:
+  containers:
+  - name: mysql-proxy
+    image: noname0443/mysql-proxy:v0.1
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 3306
+    volumeMounts:
+    - name: configs
+      mountPath: /etc/configs
+  volumes:
+    - name: configs
+      configMap:
+        name: proxy-config-{{ .Release.Name }}
