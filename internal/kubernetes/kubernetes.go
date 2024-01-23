@@ -19,9 +19,7 @@ type ClusterInfo struct {
 }
 
 type Cluster interface {
-	IsExist() (bool, error)
 	GetState() (ClusterInfo, error)
-
 	Create() error
 	Delete() error
 	ScaleReplicas() error
@@ -31,14 +29,6 @@ type K8sCluster struct {
 	Name         string
 	Password     string
 	ReplicaCount int
-}
-
-func (cls *K8sCluster) IsExist() (bool, error) {
-	_, err := exec.Command("kubectl", "get", "sts", "-n", "mysql", cls.Name).Output()
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 func ParsePort(rawPortInfo []byte) (int, error) {

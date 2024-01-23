@@ -1,0 +1,154 @@
+ <!DOCTYPE html>
+<html>
+<head>
+  <title>Cluster State Checker</title>
+  <style>
+    /* Add your CSS styles here */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+    }
+
+    nav ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul li {
+      display: inline;
+      margin-right: 10px;
+    }
+
+    nav ul li a {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    section {
+      padding: 20px;
+    }
+
+    .cluster {
+      margin-bottom: 10px;
+    }
+
+    .cluster-name {
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-block;
+      padding: 5px 10px;
+      background-color: #333;
+      color: #fff;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+      position: relative;
+    }
+
+    .cluster-name:hover {
+      background-color: #555;
+    }
+
+    .cluster-name::after {
+      content: '';
+      position: absolute;
+      top: calc(50% - 3px);
+      right: 10px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #fff;
+    }
+
+    .cluster-name.active::after {
+      transform: rotate(180deg);
+    }
+
+    .pod-list {
+      display: none;
+      margin-left: 20px;
+    }
+
+    .pod-name {
+      cursor: pointer;
+      display: inline-block;
+      padding: 2px 5px;
+      background-color: #f0f0f0;
+      color: #333;
+      border-radius: 2px;
+      transition: background-color 0.3s ease;
+    }
+
+    .pod-name:hover {
+      background-color: #e0e0e0;
+    }
+
+    .pod-status {
+      margin-left: 20px;
+    }
+
+    .register-form {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .register-form h2 {
+      margin-bottom: 10px;
+    }
+
+    .register-form input[type="text"],
+    .register-form input[type="password"],
+    .register-form input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .register-form button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .register-form button:hover {
+      background-color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="#">Register/Login</a></li>
+        <li><a href="#">Profile</a></li>
+        <li><a href="#">States</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section>
+    <div class="register-form">
+      <h2>Register</h2>
+      <form action="/web/register" method="POST">
+        <input type="text" placeholder="Name" name="username" required>
+        <input type="email" placeholder="Email" name="email" required>
+        <input type="password" placeholder="Password" name="password" required>
+        <button type="submit">Register</button>
+      </form>
+    </div>
+  </section>
+</body>
+</html>

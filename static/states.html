@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cluster State Checker</title>
+  <style>
+    /* Add your CSS styles here */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+    }
+
+    nav ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul li {
+      display: inline;
+      margin-right: 10px;
+    }
+
+    nav ul li a {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    section {
+      padding: 20px;
+    }
+
+    .cluster {
+      margin-bottom: 10px;
+    }
+
+    .cluster-name {
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-block;
+      padding: 5px 10px;
+      background-color: #333;
+      color: #fff;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+      position: relative;
+    }
+
+    .cluster-name:hover {
+      background-color: #555;
+    }
+
+    .cluster-name::after {
+      content: '';
+      position: absolute;
+      top: calc(50% - 3px);
+      right: 10px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #fff;
+    }
+
+    .cluster-name.active::after {
+      transform: rotate(180deg);
+    }
+
+    .pod-list {
+      display: none;
+      margin-left: 20px;
+    }
+
+    .pod-name {
+      cursor: pointer;
+      display: inline-block;
+      padding: 2px 5px;
+      background-color: #f0f0f0;
+      color: #333;
+      border-radius: 2px;
+      transition: background-color 0.3s ease;
+    }
+
+    .pod-name:hover {
+      background-color: #e0e0e0;
+    }
+
+    .pod-status {
+      margin-left: 20px;
+    }
+
+    .register-form {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .register-form h2 {
+      margin-bottom: 10px;
+    }
+
+    .register-form input[type="text"],
+    .register-form input[type="password"],
+    .register-form input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .register-form button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .register-form button:hover {
+      background-color: #555;
+    }
+
+    .add-cluster-form input[type="text"],
+    .add-cluster-form input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .add-cluster-form button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .add-cluster-form button:hover {
+      background-color: #555;
+    }
+
+    .cluster-actions {
+      display: flex;
+      margin-top: 10px;
+    }
+
+    .cluster-actions button {
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="#">Register/Login</a></li>
+        <li><a href="#">Profile</a></li>
+        <li><a href="#">States</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section>
+    <h1>Cluster State Checker</h1>
+    <p>Welcome to the Cluster State Checker. Here you can check the state of your cluster.</p>
+
+    <div class="cluster">
+      <div class="cluster-name">Cluster 1</div>
+      <div class="cluster-actions">
+        <button class="scale-button">Scale</button>
+        <input type="number" placeholder="Replica Count" required>
+        <button class="delete-button">Delete</button>
+      </div>
+      <ul class="pod-list">
+        <li><span class="pod-name">Pod 1</span> - <span class="pod-status">Running</span></li>
+        <li><span class="pod-name">Pod 2</span> - <span class="pod-status">Error</span></li>
+        <li><span class="pod-name">Pod 3</span> - <span class="pod-status">Running</span></li>
+      </ul>
+    </div>
+
+    <div class="cluster">
+      <div class="cluster-name">Cluster 2</div>
+      <div class="cluster-actions">
+        <button class="scale-button">Scale</button>
+        <input type="number" placeholder="Replica Count" required>
+        <button class="delete-button">Delete</button>
+      </div>
+      <ul class="pod-list">
+        <li><span class="pod-name">Pod 4</span> - <span class="pod-status">Running</span></li>
+        <li><span class="pod-name">Pod 5</span> - <span class="pod-status">Running</span></li>
+      </ul>
+    </div>
+
+    <div class="add-cluster-form">
+      <h2>Add Cluster</h2>
+      <form>
+        <input type="text" placeholder="Cluster Name" required>
+        <input type="number" placeholder="Replica Count" required>
+        <button type="submit">Add Cluster</button>
+      </form>
+    </div>
+  </section>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+  var clusterNames = document.querySelectorAll('.cluster-name');
+  clusterNames.forEach(function(clusterName) {
+    clusterName.addEventListener('click', function() {
+      var podList = this.parentNode.querySelector('.pod-list');
+      podList.style.display = podList.style.display === 'none' ? 'block' : 'none';
+      this.classList.toggle('active');
+    });
+    clusterName.classList.toggle('active');
+    clusterName.parentNode.querySelector('.pod-list').style.display = 'block';
+  });
+
+  var podNames = document.querySelectorAll('.pod-name');
+  podNames.forEach(function(podName) {
+    podName.addEventListener('click', function() {
+      var podStatus = this.parentNode.querySelector('.pod-status');
+      alert('Pod Status: ' + podStatus.textContent);
+    });
+  });
+});
+  </script>
+</body>
+</html>
