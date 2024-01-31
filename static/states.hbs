@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cluster State Checker</title>
+  <link rel="stylesheet" href="styles/states.css">
+  <script type="text/javascript" src="js/cluster.js"></script>
+  <!-- <meta http-equiv="refresh" content="15" > -->
+</head>
+<body>
+    {{>header}}
+    <section id="cluster-list">
+    <h1>Cluster State Checker</h1>
+    <p>Welcome to the DBaaS! Here you can check the state of your cluster.</p>
+
+    <script>
+      function UpdateClusterWithHTML(name) {
+        let replicas = document.getElementById('update-replicas').value;
+        UpdateCluster(name, replicas);
+      }
+    </script>
+
+    {{#each states}}
+    <div class="cluster">
+      <div class="cluster-name">{{this.ClusterName}}</div>
+      <div class="cluster-actions">
+        <button class="scale-button" onclick="UpdateClusterWithHTML('{{this.ClusterName}}')">Scale</button>
+        <input type="number" id="update-replicas" placeholder="Replica Count" required>
+        <button class="delete-button" onclick="DeleteCluster('{{this.ClusterName}}')">Delete</button>
+      </div>
+      <ul class="pod-list">
+        <p>You can connect to cluster using command <code>mysql -h {{IP}} -P {{this.Port}} -u "your user" -p"your password"</code></p>
+        {{#each this.PodStates}}
+          <li><span class="pod-name">Pod {{this.PodName}}</span>:<span class="pod-status">{{this.State}}</span></li>
+        {{/each}}
+      </ul>
+    </div>
+    {{/each}}
+
+    <script>
+      function CreateClusterWithHTML() {
+        let username = document.getElementById('cluster-username').value;
+        let database = document.getElementById('cluster-database').value;
+        let name = document.getElementById('cluster-name').value;
+        let pass = document.getElementById('cluster-password').value;
+        let replicas = document.getElementById('cluster-replicas').value;
+        CreateCluster(username, name, pass, database, replicas);
+        return false;
+      }
+    </script>
+
+    <div class="add-cluster-form" style="max-width: 400px;">
+      <h2>Add Cluster</h2>
+      <form onsubmit="return false;">
+        <input id="cluster-name" type="text" placeholder="Cluster Name" required>
+        <input id="cluster-username" type="text" placeholder="Cluster Username" required>
+        <input id="cluster-password" type="text" placeholder="Cluster Password" required>
+        <input id="cluster-database" type="text" placeholder="Cluster Database name" required>
+        <input id="cluster-replicas" type="number" placeholder="Replica Count" required>
+        <button type="submit" onclick="CreateClusterWithHTML();return false;">Add Cluster</button>
+      </form>
+    </div>
+  </section>
+  <script>
+
+  document.addEventListener('DOMContentLoaded', function() {
+  var clusterNames = document.querySelectorAll('.cluster-name');
+  clusterNames.forEach(function(clusterName) {
+    clusterName.addEventListener('click', function() {
+      var podList = this.parentNode.querySelector('.pod-list');
+      podList.style.display = podList.style.display === 'none' ? 'block' : 'none';
+      this.classList.toggle('active');
+    });
+    clusterName.classList.toggle('active');
+    clusterName.parentNode.querySelector('.pod-list').style.display = 'block';
+  });
+});
+  </script>
+</body>
+</html>

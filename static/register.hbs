@@ -1,0 +1,21 @@
+ <!DOCTYPE html>
+<html>
+<head>
+  <title>Cluster State Checker</title>
+  <link rel="stylesheet" href="styles/register.css">
+</head>
+<body>
+  {{>header}}
+
+  <section>
+    <div class="register-form">
+      <h2>Register</h2>
+      <form action="/web/register" method="POST">
+        <input type="text" placeholder="Name" name="username" required>
+        <input type="password" placeholder="Password" name="password" required>
+        <button type="submit">Register</button>
+      </form>
+    </div>
+  </section>
+</body>
+</html>

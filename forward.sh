@@ -5,5 +5,5 @@ len=$(echo $lines | wc -l)
 for ((i = 1; i <= $len; i++)); do
 	name=$(echo $(echo $lines | awk 'NR==ctr' ctr="$i" | tr -d '\n' | awk '{ print $1 }'))
 	port=$(echo $(echo $lines | awk 'NR==ctr' ctr="$i" | tr -d '\n' | awk '{ print $2 }'))
-	kubectl port-forward $name -n services $port:3306 --address 192.168.1.65 1>/dev/null 2>&1 &
+	kubectl port-forward $name -n services $port:3306 --address 0.0.0.0 1>/dev/null 2>&1 &
 done

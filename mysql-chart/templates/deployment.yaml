@@ -222,12 +222,22 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: storage
+      labels:
+        {{- include "mysql-chart.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
       {{- toYaml .Values.storageResources.resources | nindent 8 }}
   - metadata:
       name: zoo-storage
+      labels:
+        {{- include "mysql-chart.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:

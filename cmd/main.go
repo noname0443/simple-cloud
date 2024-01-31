@@ -9,11 +9,12 @@ import (
 	"strconv"
 	"strings"
 
+	"flag"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/keyauth"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/template/html/v2"
+	"github.com/gofiber/template/handlebars/v2"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,7 +23,7 @@ func SHA256(data []byte) string {
 	return fmt.Sprintf("%x", hash)
 }
 
-func GetClusterFromBody(c *fiber.Ctx) (kubernetes.Cluster, error) {
+func GetClusterFromBody(c *fiber.Ctx) (*kubernetes.K8sCluster, error) {
 	m := make(map[string]string)
 	c.Accepts("json", "text")
 
@@ -37,8 +38,10 @@ func GetClusterFromBody(c *fiber.Ctx) (kubernetes.Cluster, error) {
 	}
 
 	return &kubernetes.K8sCluster{
+		Username:     m["username"],
 		Name:         m["name"],
 		Password:     m["password"],
+		DatabaseName: m["database"],
 		ReplicaCount: replicas,
 	}, nil
 }
@@ -61,12 +64,20 @@ func GetUserFromBody(c *fiber.Ctx) (User, error) {
 }
 
 func main() {
+	IP := flag.String("ip", "0.0.0.0", "metadb database IP")
+	PORT := flag.Int("port", 0, "metadb database port")
+	flag.Parse()
+	log.Println("metadb", *IP, *PORT)
+
 	app := fiber.New(fiber.Config{
-		Views: html.New("./static", ".html"),
+		Views: handlebars.New("./static", ".hbs"),
 	})
 
-	connLine := fmt.Sprintf("%s:%s@(%s:%d)/", "admin", "admin", "192.168.1.65", 30255)
-	db, err := sqlx.Open("mysql", connLine)
+	app.Static("/styles", "./static/styles")
+	app.Static("/js", "./static/js")
+
+	connLine := fmt.Sprintf("%s:%s@(%s:%d)/", "admin", "admin", *IP, *PORT)
+	db, err := sqlx.Connect("mysql", connLine)
 	if err != nil {
 		panic(err)
 	}
@@ -78,17 +89,32 @@ func main() {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{})
 	})
+	app.Get("/states", func(c *fiber.Ctx) error {
+		states, err := GetClusterInfoStates(db, c)
+		if err != nil {
+			log.Println(err)
+			return c.SendStatus(500)
+		}
+		return c.Render(c.Params("page", "states"), fiber.Map{
+			"states":   states,
+			"password": GetPassword(c),
+			"username": GetUsername(c),
+			"IP":       IP,
+		})
+	})
 	app.Get("/:page", func(c *fiber.Ctx) error {
 		return c.Render(c.Params("page", "index"), fiber.Map{})
 	})
 	app.Post("/web/register", func(c *fiber.Ctx) error {
-		email := c.FormValue("email")
 		username := c.FormValue("username")
 		password := c.FormValue("password")
-		_, err := db.Query("INSERT INTO metadb.users (email, username, password) VALUES (?, ?, ?);", email, username, SHA256([]byte(password)))
-		log.Print(err)
-		if err != nil {
-			return c.SendStatus(500)
+		rows, err := db.Query("SELECT * FROM metadb.users WHERE username = ? AND password = ?;", username, SHA256([]byte(password)))
+		if !rows.Next() {
+			_, err = db.Query("INSERT INTO metadb.users (username, password) VALUES (?, ?);", username, SHA256([]byte(password)))
+			log.Println(err)
+			if err != nil {
+				return c.SendStatus(500)
+			}
 		}
 		c.Cookie(&fiber.Cookie{
 			Name:  "AUTH",
@@ -101,7 +127,7 @@ func main() {
 		data := strings.Split(key, ":")
 		username, password := data[0], data[1]
 		var user User
-		err := db.Select(&user, "SELECT username, password FROM metadb.users WHERE username = ? AND password = ?", username, password)
+		err := db.Get(&user, "SELECT username, password FROM metadb.users WHERE username = ? AND password = ?", username, password)
 		if err != nil {
 			return false, err
 		}
@@ -113,44 +139,74 @@ func main() {
 		Validator: validateToken,
 	}))
 
-	api.Post("/api/state", func(c *fiber.Ctx) error {
-		cls, err := GetClusterFromBody(c)
+	api.Get("/states", func(c *fiber.Ctx) error {
+		states, err := GetClusterInfoStates(db, c)
 		if err != nil {
 			return c.SendString(err.Error())
 		}
-		state, err := cls.GetState()
+		jsonData, err := json.Marshal(states)
 		if err != nil {
 			return c.SendString(err.Error())
 		}
-		return c.SendString(fmt.Sprint(state))
+		return c.Send(jsonData)
 	})
 
-	api.Post("/api/create", func(c *fiber.Ctx) error {
-		cls, err := GetClusterFromBody(c)
+	api.Post("/create", func(c *fiber.Ctx) error {
+		cls := kubernetes.K8sCluster{}
+		err := json.Unmarshal(c.Body(), &cls)
 		if err != nil {
 			return c.SendString(err.Error())
 		}
-		go cls.Create()
+		username := GetUsername(c)
+		if err != nil {
+			return c.SendString(err.Error())
+		}
+		go func() {
+			_, err = db.Query("INSERT INTO metadb.clusters (username, cluster_name, cluster_username, cluster_password) VALUES (?, ?, ?, ?);", username, cls.Name, cls.Username, cls.Password)
+			if err != nil {
+				log.Println(err)
+			}
+			err := cls.Create()
+			if err != nil {
+				log.Println(err)
+				_, err = db.Exec("DELETE FROM metadb.clusters WHERE username = ? AND cluster_name = ?;", username, cls.Name)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}()
 		if err != nil {
 			return c.SendString(err.Error())
 		}
 		return c.SendString("Creating...")
 	})
 
-	api.Post("/api/delete", func(c *fiber.Ctx) error {
-		cls, err := GetClusterFromBody(c)
+	api.Post("/delete", func(c *fiber.Ctx) error {
+		cls := kubernetes.K8sCluster{}
+		err := json.Unmarshal(c.Body(), &cls)
 		if err != nil {
 			return c.SendString(err.Error())
 		}
-		go cls.Delete()
+		username := GetUsername(c)
+		go func() {
+			_, err = db.Exec("DELETE FROM metadb.clusters WHERE username = ? AND cluster_name = ?;", username, cls.Name)
+			if err != nil {
+				log.Println(err)
+			}
+			cls.Delete()
+		}()
 		if err != nil {
 			return c.SendString(err.Error())
 		}
 		return c.SendString("Deleting...")
 	})
 
-	api.Post("/api/update", func(c *fiber.Ctx) error {
-		cls, err := GetClusterFromBody(c)
+	api.Post("/update", func(c *fiber.Ctx) error {
+		cls := kubernetes.K8sCluster{}
+		err := json.Unmarshal(c.Body(), &cls)
+		if err != nil {
+			return c.SendString(err.Error())
+		}
 		if err != nil {
 			return c.SendString(err.Error())
 		}

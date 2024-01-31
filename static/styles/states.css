@@ -1,10 +1,4 @@
- <!DOCTYPE html>
-<html>
-<head>
-  <title>Cluster State Checker</title>
-  <style>
-    /* Add your CSS styles here */
-    body {
+body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
@@ -126,29 +120,37 @@
     .register-form button:hover {
       background-color: #555;
     }
-  </style>
-</head>
-<body>
-  <header>
-    <nav>
-      <ul>
-        <li><a href="#">Register/Login</a></li>
-        <li><a href="#">Profile</a></li>
-        <li><a href="#">States</a></li>
-      </ul>
-    </nav>
-  </header>
 
-  <section>
-    <div class="register-form">
-      <h2>Register</h2>
-      <form action="/web/register" method="POST">
-        <input type="text" placeholder="Name" name="username" required>
-        <input type="email" placeholder="Email" name="email" required>
-        <input type="password" placeholder="Password" name="password" required>
-        <button type="submit">Register</button>
-      </form>
-    </div>
-  </section>
-</body>
-</html>
+    .add-cluster-form input[type="text"],
+    .add-cluster-form input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .add-cluster-form button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .add-cluster-form button:hover {
+      background-color: #555;
+    }
+
+    .cluster-actions {
+      display: flex;
+      margin-top: 10px;
+    }
+
+    .cluster-actions button {
+      margin-right: 5px;
+    }
+

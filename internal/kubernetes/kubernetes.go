@@ -14,21 +14,17 @@ type PodState struct {
 }
 
 type ClusterInfo struct {
-	PodStates []PodState
-	Port      int
-}
-
-type Cluster interface {
-	GetState() (ClusterInfo, error)
-	Create() error
-	Delete() error
-	ScaleReplicas() error
+	PodStates   []PodState
+	ClusterName string
+	Port        int
 }
 
 type K8sCluster struct {
-	Name         string
-	Password     string
-	ReplicaCount int
+	Name         string `json:"name,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Password     string `json:"password,omitempty"`
+	DatabaseName string `json:"database,omitempty"`
+	ReplicaCount int    `json:"replicas,omitempty"`
 }
 
 func ParsePort(rawPortInfo []byte) (int, error) {
@@ -102,6 +98,13 @@ func ParsePodStates(rawClusterInfo []byte) ([]PodState, error) {
 }
 
 func (cls *K8sCluster) GetState() (ClusterInfo, error) {
+	_, err := exec.Command(PATH+"forward-svc.sh",
+		fmt.Sprintf("%s", cls.Name),
+	).Output()
+	if err != nil {
+		return ClusterInfo{}, err
+	}
+
 	output, err := exec.Command(
 		"kubectl",
 		"get",
@@ -134,8 +137,9 @@ func (cls *K8sCluster) GetState() (ClusterInfo, error) {
 	port, err := ParsePort(output)
 
 	return ClusterInfo{
-		PodStates: podStates,
-		Port:      port,
+		PodStates:   podStates,
+		Port:        port,
+		ClusterName: cls.Name,
 	}, err
 }
 
@@ -144,9 +148,10 @@ func (cls *K8sCluster) Create() error {
 		fmt.Sprintf("%s", cls.Name),
 		fmt.Sprintf("%d", cls.ReplicaCount),
 		fmt.Sprintf("%s", cls.Password),
+		fmt.Sprintf("%s", cls.Username),
+		fmt.Sprintf("%s", cls.DatabaseName),
 	).Output()
-	fmt.Println(string(out), err)
-	return err
+	return fmt.Errorf("%s:%s", out, err)
 }
 
 func (cls *K8sCluster) Delete() error {
