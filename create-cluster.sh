@@ -27,6 +27,6 @@ if [ -z "$5" ]; then
   exit 5;
 fi
 
-helm install $1 mysql-chart --atomic --set replicaCount=$2 --set mysql.user_password=$3 --set mysql.user=$4 --set mysql.user_database=$5 --timeout 10m0s
+helm install $1 mysql-chart --atomic --set replicaCount=$2 --set mysql.user_password=$4 --set mysql.root_pass=$4 --set mysql.repl_pass=$4 --set mysql.user=$3 --set mysql.user_database=$5 --timeout 30m0s
 port=$(kubectl get svc $1 -n services -n services -o jsonpath='{.spec.ports[].nodePort}')
 kubectl port-forward $1 -n services $port:3306 --address 0.0.0.0 1>/dev/null 2>&1 &

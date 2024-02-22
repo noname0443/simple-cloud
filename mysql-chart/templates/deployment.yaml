@@ -45,7 +45,7 @@ spec:
           - "-c"
           - |
             set -ex
-            export SERVER_NUMBER=$(echo $POD_NAME | grep -Eo "[0-9]*")
+            export SERVER_NUMBER=$(echo $POD_NAME | grep -Eo "[0-9]*" | tail -n 1)
             export SERVER_ID=$(($SERVER_NUMBER + 1000))
 
             ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
@@ -115,22 +115,28 @@ spec:
               - sh
               - -c
               - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME"
-            initialDelaySeconds: 10
-            timeoutSeconds: 5
+            initialDelaySeconds: 120
+            failureThreshold: 20
+            timeoutSeconds: 120
           livenessProbe:
             exec:
               command:
               - sh
               - -c
               - "mysqladmin ping -p{{ .Values.mysql.root_pass }} -u {{ .Values.mysql.root_user }} -h $POD_NAME"
-            initialDelaySeconds: 10
-            timeoutSeconds: 5
+            initialDelaySeconds: 120
+            failureThreshold: 20
+            timeoutSeconds: 120
           command:
           - bash
           - "-c"
           - |
             set -ex
-            export SERVER_ID=$(($(echo $POD_NAME | grep -Eo "[0-9]*") + 1000))
+
+            mkdir /nonexistent
+            chown mysql:mysql -R /nonexistent
+
+            export SERVER_ID=$(($(echo $POD_NAME | grep -Eo "[0-9]*" | tail -n 1) + 1000))
 
             ( echo "cat <<EOF" ; cat /etc/configs/mysync.yaml ) | sh > /etc/mysync.yaml
             ( echo "cat <<EOF" ; cat /etc/configs/server.cnf ) | sh > /etc/mysql/conf.d/server.cnf

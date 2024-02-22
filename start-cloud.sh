@@ -13,3 +13,4 @@ kubectl label namespaces mysql purpose=prod --overwrite=true
 kubectl label namespaces services purpose=forwarding --overwrite=true
 kubectl label namespaces kube-system purpose=k8s --overwrite=true
 kubectl create -f network.yaml
+kubectl apply -f volume.yaml

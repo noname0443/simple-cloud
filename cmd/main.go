@@ -66,6 +66,7 @@ func GetUserFromBody(c *fiber.Ctx) (User, error) {
 func main() {
 	IP := flag.String("ip", "0.0.0.0", "metadb database IP")
 	PORT := flag.Int("port", 0, "metadb database port")
+	PASSWORD := flag.String("password", "", "metadb database password")
 	flag.Parse()
 	log.Println("metadb", *IP, *PORT)
 
@@ -76,7 +77,7 @@ func main() {
 	app.Static("/styles", "./static/styles")
 	app.Static("/js", "./static/js")
 
-	connLine := fmt.Sprintf("%s:%s@(%s:%d)/", "admin", "admin", *IP, *PORT)
+	connLine := fmt.Sprintf("%s:%s@(%s:%d)/", "admin", *PASSWORD, *IP, *PORT)
 	db, err := sqlx.Connect("mysql", connLine)
 	if err != nil {
 		panic(err)
