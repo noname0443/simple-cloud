@@ -151,7 +151,10 @@ func (cls *K8sCluster) Create() error {
 		fmt.Sprintf("%s", cls.Username),
 		fmt.Sprintf("%s", cls.DatabaseName),
 	).Output()
-	return fmt.Errorf("%s:%s", out, err)
+	if err != nil {
+		return fmt.Errorf("%s:%s", out, err.Error())
+	}
+	return nil
 }
 
 func (cls *K8sCluster) Delete() error {
